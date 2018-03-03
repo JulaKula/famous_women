@@ -1,266 +1,313 @@
 package com.example.android.miwok;
 
-import android.graphics.Color;
-import android.provider.MediaStore;
+import android.content.Intent;
+import android.content.res.Resources;
+import android.content.res.TypedArray;
+import android.databinding.DataBindingUtil;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.android.miwok.databinding.ActivityQuizBinding;
+
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class QuizActivity extends AppCompatActivity {
+public class QuizActivity extends AppCompatActivity implements View.OnClickListener {
 
-    float score = 0;
+        private final static String QUESTIONS_ARRAY_KEY = "questionsArrayKey";
+        private final static String CURRENT_QUESTION = "currentQuestion";
+        private final static String WRONG_ANSWERS = "wrongQuestions";
+        private final static String SCORE = "score";
+        private final static String IS_RESULT_SHOWN = "isResultShown";
+        private final static String SCROLL_X = "scrollX";
+        private final static String SCROLL_Y = "scrollY";
+        private final static String CORRECT_COUNT = "number of correct answers";
+        private final static String WRONG_COUNT = "number of wrong answers";
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_quiz); // Temporary -> use array adapt or show 5 questions by default?
+        float score;
+        int currentQuestion, correctAnsNmb, incorrectAnsNmb, arrayLength;
+        ArrayList<QuizQuestion> questions = new ArrayList<>();
+        ArrayList<Integer> wrongAnswers = new ArrayList<>();
+        SparseArray<RadioGroup> rgSparse;
+        SparseArray<TextView> questionSparse;
+        SparseArray<Button> submitSparse;
+        boolean isResultShown;
+        ActivityQuizBinding binding;
 
-        // this is for the arrow in the menu bar to go back to parent activity
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            binding = DataBindingUtil.setContentView(this, R.layout.activity_quiz);
+            // this is for the arrow in the menu bar to go back to parent activity
+            setSupportActionBar(binding.toolbar);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            // Hide result views
+            binding.layoutResult.setVisibility(View.GONE);
+            //HashMaps pair the question numbers with the corresponding questions, answers, and submit buttons.
+            // The aim is to be able to put them in a loop, so that we need significantly less lines of code.
+            rgSparse = new SparseArray<>();
+            rgSparse.put(0, binding.rgQuestion1);
+            rgSparse.put(1, binding.rgQuestion2);
+            rgSparse.put(2, binding.rgQuestion3);
+            rgSparse.put(3, binding.rgQuestion4);
+            rgSparse.put(4, binding.rgQuestion5);
 
-        final ArrayList<QuizQuestion> questions = new ArrayList<QuizQuestion>();    // ArrayList of all quiz questions
+            questionSparse = new SparseArray<>();
+            questionSparse.put(0,binding.tvQuestion1);
+            questionSparse.put(1,binding.tvQuestion2);
+            questionSparse.put(2,binding.tvQuestion3);
+            questionSparse.put(3,binding.tvQuestion4);
+            questionSparse.put(4,binding.tvQuestion5);
 
-        questions.add(new QuizQuestion("Question 1", "Answer 11", "Answer 12", "Answer 13", 1, 1));
-        questions.add(new QuizQuestion("Question 2", "Answer 21", "Answer 22", "Answer 23", 2, 1));
-        questions.add(new QuizQuestion("Question 3", "Answer 31", "Answer 32", "Answer 33", 3, 1));
-        questions.add(new QuizQuestion("Question 4", "Answer 41", "Answer 42", "Answer 43", 1, 1));
-        questions.add(new QuizQuestion("Question 5", "Answer 51", "Answer 52", "Answer 53", 1, 1));
-        questions.add(new QuizQuestion("Question 6", "Answer 61", "Answer 62", "Answer 63", 1, 1));
+            submitSparse = new SparseArray<>();
+            submitSparse.put(0,binding.tvSubmit1);
+            submitSparse.put(1,binding.tvSubmit2);
+            submitSparse.put(2,binding.tvSubmit3);
+            submitSparse.put(3,binding.tvSubmit4);
+            submitSparse.put(4,binding.tvSubmit5);
 
-        // Randomized questions
-        Collections.shuffle(questions);
-
-        // Temporary code
-        // Find views
-        // Question 1
-        final TextView question1 = (TextView)findViewById(R.id.tv_question1);
-        final RadioGroup rg1 = (RadioGroup)findViewById(R.id.rg_question1);
-        final TextView ans1_1 = (TextView)findViewById(R.id.rb_answer1_1);
-        final TextView ans1_2 = (TextView)findViewById(R.id.rb_answer1_2);
-        final TextView ans1_3 = (TextView)findViewById(R.id.rb_answer1_3);
-        final TextView submit1 = (TextView) findViewById(R.id.tv_submit_1);
-        // Question 2
-        final TextView question2 = (TextView)findViewById(R.id.tv_question2);
-        final RadioGroup rg2 = (RadioGroup)findViewById(R.id.rg_question2);
-        final TextView ans2_1 = (TextView)findViewById(R.id.rb_answer2_1);
-        final TextView ans2_2 = (TextView)findViewById(R.id.rb_answer2_2);
-        final TextView ans2_3 = (TextView)findViewById(R.id.rb_answer2_3);
-        final TextView submit2 = (TextView) findViewById(R.id.tv_submit_2);
-        // Question 3
-        final TextView question3 = (TextView)findViewById(R.id.tv_question3);
-        final RadioGroup rg3 = (RadioGroup)findViewById(R.id.rg_question3);
-        final TextView ans3_1 = (TextView)findViewById(R.id.rb_answer3_1);
-        final TextView ans3_2 = (TextView)findViewById(R.id.rb_answer3_2);
-        final TextView ans3_3 = (TextView)findViewById(R.id.rb_answer3_3);
-        final TextView submit3 = (TextView) findViewById(R.id.tv_submit_3);
-        // Question 4
-        final TextView question4= (TextView)findViewById(R.id.tv_question4);
-        final RadioGroup rg4 = (RadioGroup)findViewById(R.id.rg_question4);
-        final TextView ans4_1 = (TextView)findViewById(R.id.rb_answer4_1);
-        final TextView ans4_2 = (TextView)findViewById(R.id.rb_answer4_2);
-        final TextView ans4_3 = (TextView)findViewById(R.id.rb_answer4_3);
-        final TextView submit4 = (TextView) findViewById(R.id.tv_submit_4);
-        // Question 5
-        final TextView question5 = (TextView)findViewById(R.id.tv_question5);
-        final RadioGroup rg5 = (RadioGroup)findViewById(R.id.rg_question5);
-        final TextView ans5_1 = (TextView)findViewById(R.id.rb_answer5_1);
-        final TextView ans5_2 = (TextView)findViewById(R.id.rb_answer5_2);
-        final TextView ans5_3 = (TextView)findViewById(R.id.rb_answer5_3);
-        final TextView submit5 = (TextView) findViewById(R.id.tv_submit_5);
-        // Result
-        final TextView result = (TextView) findViewById(R.id.tv_result);
-
-        // Display questions and answers
-        question1.setText(questions.get(0).getQuestion());
-        ans1_1.setText(questions.get(0).getAnswer1());
-        ans1_2.setText(questions.get(0).getAnswer2());
-        ans1_3.setText(questions.get(0).getAnswer3());
-
-        question2.setText(questions.get(1).getQuestion());
-        question2.setVisibility(View.INVISIBLE);
-        rg2.setVisibility(View.INVISIBLE);
-        ans2_1.setText(questions.get(1).getAnswer1());
-        ans2_2.setText(questions.get(1).getAnswer2());
-        ans2_3.setText(questions.get(1).getAnswer3());
-        submit2.setVisibility(View.INVISIBLE);
-
-        question3.setText(questions.get(2).getQuestion());
-        question3.setVisibility(View.INVISIBLE);
-        rg3.setVisibility(View.INVISIBLE);
-        ans3_1.setText(questions.get(2).getAnswer1());
-        ans3_2.setText(questions.get(2).getAnswer2());
-        ans3_3.setText(questions.get(2).getAnswer3());
-        submit3.setVisibility(View.INVISIBLE);
-
-        question4.setText(questions.get(3).getQuestion());
-        question4.setVisibility(View.INVISIBLE);
-        rg4.setVisibility(View.INVISIBLE);
-        ans4_1.setText(questions.get(3).getAnswer1());
-        ans4_2.setText(questions.get(3).getAnswer2());
-        ans4_3.setText(questions.get(3).getAnswer3());
-        submit4.setVisibility(View.INVISIBLE);
-
-        question5.setText(questions.get(4).getQuestion());
-        question5.setVisibility(View.INVISIBLE);
-        rg5.setVisibility(View.INVISIBLE);
-        ans5_1.setText(questions.get(4).getAnswer1());
-        ans5_2.setText(questions.get(4).getAnswer2());
-        ans5_3.setText(questions.get(4).getAnswer3());
-        submit5.setVisibility(View.INVISIBLE);
-
-
-        // Question 1 submit
-        if (submit1 != null) {
-            // Set a click listener on that View
-            submit1.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (rg1.getCheckedRadioButtonId() == -1) {
-                        Toast.makeText(getBaseContext(), "Select answer!",Toast.LENGTH_SHORT).show();
+            //If the activity is opened for the first time, adds all the questions to the arrayList, shuffles them and then make a sublist with the first 5 questions.
+            //The questions after the first one are made invisible.
+            if (savedInstanceState == null) {
+                questions = extractQuestions();
+                currentQuestion = 0;
+                score = 0;
+                isResultShown = false;
+                arrayLength = questions.size();
+                for(int i = 1 ; i<arrayLength ; i++){
+                    rgSparse.get(i).setVisibility(View.INVISIBLE);
+                    questionSparse.get(i).setVisibility(View.INVISIBLE);
+                    submitSparse.get(i).setVisibility(View.INVISIBLE);
+                }
+                //After rotation, retrieve the list of chosen questions, number of the current question, score and wrong answers up to then
+                //Redraw the current state of the views before rotation (visibilities, disabled buttons, right and wrong answer checks etc..)
+            } else {
+                questions = savedInstanceState.getParcelableArrayList(QUESTIONS_ARRAY_KEY);
+                currentQuestion = savedInstanceState.getInt(CURRENT_QUESTION);
+                wrongAnswers = (ArrayList<Integer>)savedInstanceState.getSerializable(WRONG_ANSWERS);
+                score = savedInstanceState.getFloat(SCORE);
+                isResultShown = savedInstanceState.getBoolean(IS_RESULT_SHOWN);
+                correctAnsNmb = savedInstanceState.getInt(CORRECT_COUNT);
+                incorrectAnsNmb = savedInstanceState.getInt(WRONG_COUNT);
+                final int x = savedInstanceState.getInt(SCROLL_X);
+                final int y = savedInstanceState.getInt(SCROLL_Y);
+                binding.scrollView.post(new Runnable(){
+                    public void run(){
+                        binding.scrollView.scrollTo(x, y);
                     }
-                    else {
-                        int selectedRadioButtonID = rg1.indexOfChild(findViewById(rg1.getCheckedRadioButtonId()));
-                        View child = rg1.getChildAt(questions.get(0).getCorrectAnswer());
-                        child.setBackgroundColor(Color.GREEN);
-                        if (questions.get(0).getCorrectAnswer() != selectedRadioButtonID){
-                            View selected = rg1.getChildAt(selectedRadioButtonID);
-                            selected.setBackgroundColor(Color.RED);
-                        } else {
-                            score ++;
-                        }
-                        for (int i = 0; i < rg1.getChildCount(); i++) {
-                            rg1.getChildAt(i).setEnabled(false);
-                        }
-                        question2.setVisibility(View.VISIBLE);
-                        rg2.setVisibility(View.VISIBLE);
-                        submit2.setVisibility(View.VISIBLE);
+                });
+                for(int j = 0; j < currentQuestion ; j++){
+                    for (int i = 0; i < rgSparse.get(j).getChildCount(); i++) {
+                        rgSparse.get(j).getChildAt(i).setEnabled(false);
+                    }
+                    correctAnswerCheck(rgSparse.get(j), j);
+                    submitSparse.get(j).setVisibility(View.GONE);
+                    if(wrongAnswers.get(j) != 0){
+                        RadioButton selectedAnswer = findViewById(wrongAnswers.get(j));
+                        selectedAnswer.setButtonDrawable(R.drawable.ic_cancel);
+                        LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) selectedAnswer.getLayoutParams();
+                        params.setMargins(16, 0, 0, 0);
+                        selectedAnswer.setLayoutParams(params);
+                        selectedAnswer.setPadding(16, 0, 0, 0);
                     }
                 }
-            });
+                arrayLength = questions.size();
+                for(int i = currentQuestion+1 ; i<arrayLength ; i++){
+                    rgSparse.get(i).setVisibility(View.INVISIBLE);
+                    questionSparse.get(i).setVisibility(View.INVISIBLE);
+                    submitSparse.get(i).setVisibility(View.INVISIBLE);
+                }
+
+                // Display result
+                if(isResultShown)
+                    displayResult(score, correctAnsNmb, incorrectAnsNmb);
+
+            }
+
+            // Display questions and answers
+            for(int j = 0; j< arrayLength; j++){
+                questionSparse.get(j).setText(questions.get(j).getQuestion());
+                RadioButton option1 = (RadioButton) rgSparse.get(j).getChildAt(1);
+                RadioButton option2 = (RadioButton) rgSparse.get(j).getChildAt(2);
+                RadioButton option3 = (RadioButton) rgSparse.get(j).getChildAt(3);
+                option1.setText(questions.get(j).getAnswer1());
+                option2.setText(questions.get(j).getAnswer2());
+                option3.setText(questions.get(j).getAnswer3());
+            }
+            // Set a click listeners on submit buttons
+            binding.tvSubmit1.setOnClickListener(this);
+            binding.tvSubmit2.setOnClickListener(this);
+            binding.tvSubmit3.setOnClickListener(this);
+            binding.tvSubmit4.setOnClickListener(this);
+            binding.tvSubmit5.setOnClickListener(this);
+            }
+
+        //Assign commands to each buttons with a switch statement
+        @Override
+        public void onClick(View v){
+            switch(v.getId()){
+                case R.id.tv_submit_1:
+                case R.id.tv_submit_2:
+                case R.id.tv_submit_3:
+                case R.id.tv_submit_4:
+                case R.id.tv_submit_5: {
+                    submit(currentQuestion);
+                    break;
+                }
+            }
         }
 
-        // Question 2 submit
-        if (submit2 != null) {
-            // Set a click listener on that View
-            submit2.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (rg2.getCheckedRadioButtonId() == -1) {
-                        Toast.makeText(getBaseContext(), "Select answer!",Toast.LENGTH_SHORT).show();
-                    }
-                    else {
-                        int selectedRadioButtonID = rg2.indexOfChild(findViewById(rg2.getCheckedRadioButtonId()));
-                        View child = rg2.getChildAt(questions.get(1).getCorrectAnswer());
-                        child.setBackgroundColor(Color.GREEN);
-                        if (questions.get(1).getCorrectAnswer() != selectedRadioButtonID){
-                            View selected = rg2.getChildAt(selectedRadioButtonID);
-                            selected.setBackgroundColor(Color.RED);
-                        } else {
-                            score ++;
-                        }
-                        for (int i = 0; i < rg2.getChildCount(); i++) {
-                            rg2.getChildAt(i).setEnabled(false);
-                        }
-                        question3.setVisibility(View.VISIBLE);
-                        rg3.setVisibility(View.VISIBLE);
-                        submit3.setVisibility(View.VISIBLE);
-                    }
-                }
-            });
-        }
-        // Question 3 submit
-        if (submit3 != null) {
-            // Set a click listener on that View
-            submit3.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (rg3.getCheckedRadioButtonId() == -1) {
-                        Toast.makeText(getBaseContext(), "Select answer!",Toast.LENGTH_SHORT).show();
-                    }
-                    else {
-                        int selectedRadioButtonID = rg3.indexOfChild(findViewById(rg3.getCheckedRadioButtonId()));
-                        View child = rg3.getChildAt(questions.get(2).getCorrectAnswer());
-                        child.setBackgroundColor(Color.GREEN);
-                        if (questions.get(2).getCorrectAnswer() != selectedRadioButtonID){
-                            View selected = rg3.getChildAt(selectedRadioButtonID);
-                            selected.setBackgroundColor(Color.RED);
-                        } else {
-                            score ++;
-                        }
-                        for (int i = 0; i < rg3.getChildCount(); i++) {
-                            rg3.getChildAt(i).setEnabled(false);
-                        }
-                        question4.setVisibility(View.VISIBLE);
-                        rg4.setVisibility(View.VISIBLE);
-                        submit4.setVisibility(View.VISIBLE);
-                    }
-                }
-            });
-        }
-        // Question 4 submit
-        if (submit4 != null) {
-            // Set a click listener on that View
-            submit4.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (rg4.getCheckedRadioButtonId() == -1) {
-                        Toast.makeText(getBaseContext(), "Select answer!",Toast.LENGTH_SHORT).show();
-                    }
-                    else {
-                        int selectedRadioButtonID = rg4.indexOfChild(findViewById(rg4.getCheckedRadioButtonId()));
-                        View child = rg4.getChildAt(questions.get(3).getCorrectAnswer());
-                        child.setBackgroundColor(Color.GREEN);
-                        if (questions.get(3).getCorrectAnswer() != selectedRadioButtonID){
-                            View selected = rg4.getChildAt(selectedRadioButtonID);
-                            selected.setBackgroundColor(Color.RED);
-                        } else {
-                            score ++;
-                        }
-                        for (int i = 0; i < rg4.getChildCount(); i++) {
-                            rg4.getChildAt(i).setEnabled(false);
-                        }
-                        question5.setVisibility(View.VISIBLE);
-                        rg5.setVisibility(View.VISIBLE);
-                        submit5.setVisibility(View.VISIBLE);
-                    }
-                }
-            });
-        }
-        // Question 5 submit
-        if (submit5 != null) {
-            // Set a click listener on that View
-            submit5.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (rg5.getCheckedRadioButtonId() == -1) {
-                        Toast.makeText(getBaseContext(), "Select answer!",Toast.LENGTH_SHORT).show();
-                    }
-                    else {
-                        int selectedRadioButtonID = rg5.indexOfChild(findViewById(rg5.getCheckedRadioButtonId()));
-                        View child = rg5.getChildAt(questions.get(2).getCorrectAnswer());
-                        child.setBackgroundColor(Color.GREEN);
-                        if (questions.get(4).getCorrectAnswer() != selectedRadioButtonID){
-                            View selected = rg5.getChildAt(selectedRadioButtonID);
-                            selected.setBackgroundColor(Color.RED);
-                        } else {
-                            score ++;
-                        }
-                        for (int i = 0; i < rg5.getChildCount(); i++) {
-                            rg5.getChildAt(i).setEnabled(false);
-                        }
+        public ArrayList<QuizQuestion> extractQuestions(){
+            Resources resources = getResources();
+            TypedArray typedArray = resources.obtainTypedArray(R.array.quiz_questions);
+            int length = typedArray.length();
+            for (int i = 0; i < length; ++i) {
+                int id = typedArray.getResourceId(i, 0);
+                String[] question = resources.getStringArray(id);
+                questions.add(new QuizQuestion(question));
+            }
+            typedArray.recycle();
 
-                        score = score / 5 * 100;
-                        result.setText("Your score is: " + (int)score + "%");
+            // Randomized questions
+            Collections.shuffle(questions);
+            questions = new ArrayList<>(questions.subList(0,5));
+            return questions;
+        }
+
+        //Common submit method for all questions
+        public void submit(int numberOfQuestion) {
+            //Warn if no answer is selected
+            if (rgSparse.get(numberOfQuestion).getCheckedRadioButtonId() == -1) {
+                Toast.makeText(getBaseContext(), "Select answer!", Toast.LENGTH_SHORT).show();
+                return;
+            } else {
+                //Correct option is checked whether user gives the right answer or not
+                int selectedRadioButtonID = rgSparse.get(numberOfQuestion).indexOfChild(findViewById(rgSparse.get(numberOfQuestion).getCheckedRadioButtonId()));
+                correctAnswerCheck(rgSparse.get(numberOfQuestion), numberOfQuestion);
+                //if the answer was wrong put a wrong symbol to the option chosen.
+                if (questions.get(numberOfQuestion).getCorrectAnswer() != selectedRadioButtonID) {
+                    incorrectAnswerCheck(rgSparse.get(numberOfQuestion));
+                    //Keep track of wrong answers for rotation
+                    wrongAnswers.add(rgSparse.get(numberOfQuestion).getCheckedRadioButtonId());
+                } else {
+                    score++;
+                    wrongAnswers.add(0);
+                }
+                // For non-checked radio button show ic_notchecked
+                for (int i = 1; i < rgSparse.get(numberOfQuestion).getChildCount(); i++){
+                    if (i != selectedRadioButtonID && i != questions.get(numberOfQuestion).getCorrectAnswer()){
+                        notCheck(rgSparse.get(numberOfQuestion), i);
                     }
                 }
-            });
+
+                //Disable the previous question once it is submitted
+                for (int i = 0; i < rgSparse.get(numberOfQuestion).getChildCount(); i++) {
+                    rgSparse.get(numberOfQuestion).getChildAt(i).setEnabled(false);
+                }
+                submitSparse.get(numberOfQuestion).setVisibility(View.GONE);
+                //Make the next question visible
+                numberOfQuestion++;
+                if(numberOfQuestion<arrayLength){
+                    questionSparse.get(numberOfQuestion).setVisibility(View.VISIBLE);
+                    rgSparse.get(numberOfQuestion).setVisibility(View.VISIBLE);
+                    submitSparse.get(numberOfQuestion).setVisibility(View.VISIBLE);
+                }
+                // Automatically scroll to next question's submit button
+                if (numberOfQuestion < arrayLength)
+                    submitSparse.get(numberOfQuestion).getParent().requestChildFocus(submitSparse.get(numberOfQuestion), submitSparse.get(numberOfQuestion));
+                // Last question - display result
+                if (numberOfQuestion == arrayLength){
+                    score = score / 5 * 100;
+                    correctAnsNmb = correctAnswersNmb();
+                    incorrectAnsNmb = arrayLength - correctAnsNmb;
+                    displayResult(score, correctAnsNmb, incorrectAnsNmb);
+                    isResultShown = true;
+                }
+            }
+            currentQuestion++;
+        }
+
+        public void correctAnswerCheck(RadioGroup rg, int numberOfQuestion) {
+            RadioButton correctAnswer = findViewById(rg.getChildAt(questions.get(numberOfQuestion).getCorrectAnswer()).getId());
+            correctAnswer.setButtonDrawable(R.drawable.ic_check);
+            LinearLayout.LayoutParams params1 = (LinearLayout.LayoutParams) correctAnswer.getLayoutParams();
+            params1.setMargins(16, 0, 0, 0);
+            correctAnswer.setLayoutParams(params1);
+            correctAnswer.setPadding(16, 0, 0, 0);
+        }
+
+        public void incorrectAnswerCheck(RadioGroup rg) {
+
+            RadioButton selectedAnswer = findViewById(rg.getCheckedRadioButtonId());
+            selectedAnswer.setButtonDrawable(R.drawable.ic_cancel);
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) selectedAnswer.getLayoutParams();
+            params.setMargins(16, 0, 0, 0);
+            selectedAnswer.setLayoutParams(params);
+            selectedAnswer.setPadding(16, 0, 0, 0);
+        }
+
+        public void notCheck(RadioGroup rg, int index) {
+
+            RadioButton rb = (RadioButton) rg.getChildAt(index);
+            rb.setButtonDrawable(R.drawable.ic_notchecked);
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) rb.getLayoutParams();
+            params.setMargins(20, 0, 0, 0);
+            rb.setLayoutParams(params);
+            rb.setPadding(16, 4, 4, 4);
+        }
+
+        public int correctAnswersNmb() {
+            int correctNmb = 0;
+            for (int i = 0; i < arrayLength; i++){
+                int selectedRadioButtonID = rgSparse.get(i).indexOfChild(findViewById(rgSparse.get(i).getCheckedRadioButtonId()));
+                if (selectedRadioButtonID == questions.get(i).getCorrectAnswer()){
+                    correctNmb ++;
+                }
+            }
+            return correctNmb;
+        }
+
+        public void displayResult(float score, int correctAns, int incorrectAns){
+            // Make views visible
+            binding.layoutResult.setVisibility(View.VISIBLE);
+            // Automatically scroll reset button
+            binding.restart.getParent().requestChildFocus(binding.restart, binding.restart);
+            //imgCorrect.setVisibility(View.VISIBLE);
+            //imgIncorrect.setVisibility(View.VISIBLE);
+            binding.tvResult.setText(getString(R.string.quizResult) + (int) score + "%");
+            binding.tvCorrect.setText(getString(R.string.quizCorrect) + correctAns);
+            binding.tvWrong.setText(getString(R.string.quizIncorrect) + incorrectAns);
+        }
+
+        // invoked when the activity may be temporarily destroyed, save the instance state here
+        @Override
+        public void onSaveInstanceState(Bundle outState) {
+            // save questions ArrayList when changing state
+            outState.putParcelableArrayList(QUESTIONS_ARRAY_KEY, questions);
+            outState.putInt(CURRENT_QUESTION, currentQuestion);
+            outState.putSerializable(WRONG_ANSWERS, wrongAnswers);
+            outState.putFloat(SCORE, score);
+            outState.putBoolean(IS_RESULT_SHOWN, isResultShown);
+            outState.putInt(CORRECT_COUNT, correctAnsNmb);
+            outState.putInt(WRONG_COUNT, incorrectAnsNmb);
+            outState.putInt(SCROLL_X, binding.scrollView.getScrollX());
+            outState.putInt(SCROLL_Y, binding.scrollView.getScrollY());
+            // call superclass to save any view hierarchy
+            super.onSaveInstanceState(outState);
+        }
+
+        public void restartactivity (View v){
+            Intent intent = getIntent();
+            finish();
+            startActivity(intent);
         }
     }
-}
+

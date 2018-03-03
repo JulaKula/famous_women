@@ -15,113 +15,116 @@
  */
 package com.example.android.miwok;
 
+import android.app.SearchManager;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.text.method.ScrollingMovementMethod;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ImageView;
-import android.widget.ListView;
-import android.widget.TextView;
 
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 
+
 public class MainActivity extends AppCompatActivity {
+
+    private ArrayList<Woman> women = new ArrayList<>();
+    public static final String CHOSEN_WOMAN = "chosen_woman";
+    public static final String WOMEN_LIST = "women_list";
+    SearchView searchView;
+    WomenAdapterRecycle adapter;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.word_list);
+        setContentView(R.layout.activity_main);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
         // ( ͡° ͜ʖ ͡°)
-        // Create a list of words
-        final ArrayList<Word> words = new ArrayList<Word>();
-        words.add(new Word(R.string.maria_profession, R.string.maria,
-                R.drawable.maria_sklodowska_listimg, R.drawable.maria_poland_flag));
-        words.add(new Word(R.string.dalia_profession, R.string.dalia,
-                R.drawable.dalia_grybauskaite_listimg, R.drawable.dalia_lithuania_flag));
-        words.add(new Word(R.string.elisabeta_proffesion, R.string.elisabeta,
-                R.drawable.elisabeta_rizea_listimg, R.drawable.elisabeta_rizea_flag));
-        words.add(new Word(R.string.mother_theresa_profession, R.string.mother_theresa,
-                R.drawable.mother_theresa_listimg, R.drawable.theresa_macedonia_flag));
 
+        women = WomenArrayList.getWomen(this);
 
+        // Find the {@link RecyclerView} object in the view hierarchy of the {@link Activity}.
+        // There should be a {@link RecyclerView} with the view ID called list, which is declared in the
+        // woman_listt.xml layout file.
+        RecyclerView recyclerView = (RecyclerView) findViewById(R.id.list);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
 
-        // Create an {@link WordAdapter}, whose data source is a list of {@link Word}s. The
         // adapter knows how to create list items for each item in the list.
+        adapter = new WomenAdapterRecycle(this, women);
 
+        // Make the {@link RecyclerView} use the {@link WomanAdapter} we created above, so that the
+        // {@link RecyclerView} will display list items for each {@link Woman} in the list.
+        recyclerView.setAdapter(adapter);
 
-        WordAdapter adapter = new WordAdapter(this, words, R.color.category_numbers);
-
-        // Find the {@link ListView} object in the view hierarchy of the {@link Activity}.
-        // There should be a {@link ListView} with the view ID called list, which is declared in the
-        // word_list.xml layout file.
-        ListView listView = (ListView) findViewById(R.id.list);
-
-        // Make the {@link ListView} use the {@link WordAdapter} we created above, so that the
-        // {@link ListView} will display list items for each {@link Word} in the list.
-        listView.setAdapter(adapter);
-
-        // Set a click listener to play the audio when the list item is clicked on
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-
-                // Get the {@link Word} object at the given position the user clicked on
-                Word word = words.get(position);
-                int indexOfListItem=position;
-                //Get the TextView ID to transfer data to the next activity
-                TextView profession = (TextView) view.findViewById(R.id.profession_text_view);
-                String profession_text = profession.getText().toString();
-                TextView name = (TextView) view.findViewById(R.id.name_text_view);
-                String name_text = name.getText().toString();
-
-
-
-                //we use INTENT to turn on new ones activity
-                Intent myIntent = new Intent(MainActivity.this, DetailsActivity.class);
-
-                //we get the contents of the downloaded textView to display them in the new activity
-                myIntent.putExtra("PROFESSION", profession_text );
-                myIntent.putExtra("NAME", name_text);
-                myIntent.putExtra("POSITION", indexOfListItem);
-                      // Start the new activity
-               startActivity(myIntent);
-
-
-            }
-        });
-
+        Intent intent = getIntent();
+        if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
+            String query = intent.getStringExtra(SearchManager.QUERY);
+            adapter.getFilter().filter(query);
+        }
     }
 
-    // this is to create the menu bar
+    // this is to create the menu
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.main_menu, menu);
+        searchView = (SearchView) menu.findItem(R.id.action_search).getActionView();
+        SearchManager searchManager = (SearchManager) getSystemService(SEARCH_SERVICE);
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+
+        //added filter to list (dynamic change input text)
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String query) {
+                adapter.getFilter().filter(query);
+                return false;
+            }
+        });
+
         return true;
     }
-    // this is to create the different parts of the menu bar
+
+    // this is menu Intents
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.about_application:
-                Intent intent1 = new Intent(this, AboutApplication.class);
-                this.startActivity(intent1);
+                Intent intentAboutApp = new Intent(this, AboutApplication.class);
+                this.startActivity(intentAboutApp);
                 return true;
             case R.id.quiz:
-                Intent intent2 = new Intent(this, QuizActivity.class);
-                this.startActivity(intent2);
+                Intent intentQuiz = new Intent(this, QuizActivity.class);
+                this.startActivity(intentQuiz);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putSerializable(WOMEN_LIST, women);
+        super.onSaveInstanceState(outState);
+    }
+
+    
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
     }
 }

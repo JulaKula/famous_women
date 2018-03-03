@@ -15,104 +15,82 @@
  */
 package com.example.android.miwok;
 
-import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
-import android.provider.ContactsContract;
+import android.support.design.widget.AppBarLayout;
+import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import org.w3c.dom.Text;
-
-import java.util.ArrayList;
 
 public class DetailsActivity extends AppCompatActivity {
 
-
     private ImageView portraitImageView;
-    private TextView descriptionTextView;
+    private TextView profession, descriptionTextView;
+    CollapsingToolbarLayout name;
     private ImageView flagImageView;
+    public static final String CHOSEN_WOMAN = "chosen_woman";
+    AppBarLayout appBarLayout;
+
+    // Array list contains IDs for: name, description on image
+    private Woman chosenWoman;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.details_view);
 
-       
+
+        final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+
+        //return our back arrow
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
 
         //we collect the transferred data from the previous activity
-        String profession_string = getIntent().getStringExtra("PROFESSION");
-        String name_string = getIntent().getStringExtra("NAME");
-        /**
-         * I created a variable that retains the position of the list item that was clicked
-         */
-        portraitImageView=(ImageView) findViewById(R.id.portrait_image);
-        descriptionTextView= (TextView) findViewById(R.id.description_text);
-        flagImageView= (ImageView) findViewById(R.id.flag_of_country);
-        int position= getIntent().getIntExtra("POSITION",0);
-
-        if(position==0)
-        {
-            /**
-             * Poland
-             */
-
-
-            portraitImageView.setImageResource(R.drawable.maria_portrait);
-            descriptionTextView.setText(R.string.body_details_description_dalia);
-            flagImageView.setImageResource(R.drawable.maria_poland_flag);
-        }
-        else if(position==1)
-        {
-            /**
-             * Lithuania
-             */
-
-
-            portraitImageView.setImageResource(R.drawable.dalia_portrait);
-            descriptionTextView.setText(R.string.body_details_description_dalia);
-            flagImageView.setImageResource(R.drawable.dalia_lithuania_flag);
-        }
-        else if(position==2)
-        {
-            /**
-             * Romania
-             */
-
-            portraitImageView.setImageResource(R.drawable.elisabeta_portrait);
-            descriptionTextView.setText(R.string.body_details_description_elisabeta);
-            flagImageView.setImageResource(R.drawable.elisabeta_rizea_flag);
-        }
-        else if (position==3) {
-            /**
-             * Macedonia
-             */
-
-            portraitImageView.setImageResource(R.drawable.theresa_portrait);
-            descriptionTextView.setText(R.string.body_details_description_mother_theresa);
-            flagImageView.setImageResource(R.drawable.theresa_macedonia_flag);
+        Bundle bundle = getIntent().getExtras();
+        if(bundle != null){
+            chosenWoman = bundle.getParcelable(CHOSEN_WOMAN);
         }
 
+        name = findViewById(R.id.collapsing_toolbar);
+        profession =  findViewById(R.id.profession_text);
+        portraitImageView= findViewById(R.id.portrait_image);
+        descriptionTextView=  findViewById(R.id.description_text);
+        flagImageView= findViewById(R.id.flag_of_country);
+        appBarLayout= findViewById(R.id.appbar);
+        appBarLayout.addOnOffsetChangedListener(new AppBarLayout.OnOffsetChangedListener() {
+            @Override
+            public void onOffsetChanged(AppBarLayout appBarLayout, int verticalOffset) {
 
-        //put data to new textView
-        TextView profession = (TextView) findViewById(R.id.profession_text);
-        profession.setText(profession_string);
-        TextView name = (TextView) findViewById(R.id.name_text);
-        name.setText(name_string);
+                if (Math.abs(verticalOffset)-appBarLayout.getTotalScrollRange() == 0)
+                {flagImageView.setVisibility(View.INVISIBLE);
+                    //  Collapsed
+                }
+                else
+                {flagImageView.setVisibility(View.VISIBLE);
+                    //Expanded
+                }
+            }
+        });
 
+        //Display the information and images of the chosen woman
+        setTitle(chosenWoman.getName());
+        profession.setText(chosenWoman.getProfession());
+        portraitImageView.setImageResource(chosenWoman.getPortraitImageId());
+        descriptionTextView.setText(chosenWoman.getDescription());
+        flagImageView.setImageResource(chosenWoman.getFlagImageId());
 
         // TEMPORARY CODE - OPEN QUIZ
         // Find View that opens Quiz
-        TextView quiz = (TextView) findViewById(R.id.tv_quiz);
+        TextView quiz = findViewById(R.id.tv_quiz);
         if (quiz != null) {
             // Set a click listener on that View
             quiz.setOnClickListener(new View.OnClickListener() {
@@ -123,7 +101,30 @@ public class DetailsActivity extends AppCompatActivity {
                 }
             });
         }
+    }
 
-
+    // this is to create the menu bar
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu_no_search, menu);
+        return true;
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.about_application:
+                Intent intent1 = new Intent(this, AboutApplication.class);
+                finish();
+                this.startActivity(intent1);
+                return true;
+            case R.id.quiz:
+                Intent intent2 = new Intent(this, QuizActivity.class);
+                finish();
+                this.startActivity(intent2);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 }
